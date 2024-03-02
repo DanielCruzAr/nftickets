@@ -9,17 +9,7 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "_ticketPrice",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_organizerFeePercentage",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_ownerFeePercentage",
+						"name": "_percentageFee",
 						"type": "uint256"
 					}
 				],
@@ -205,53 +195,15 @@
 				"anonymous": false,
 				"inputs": [
 					{
-						"indexed": true,
-						"internalType": "address",
-						"name": "previousOwner",
-						"type": "address"
-					},
-					{
-						"indexed": true,
-						"internalType": "address",
-						"name": "newOwner",
-						"type": "address"
-					}
-				],
-				"name": "OwnershipTransferred",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": true,
+						"indexed": false,
 						"internalType": "uint256",
-						"name": "tokenId",
+						"name": "ticketId",
 						"type": "uint256"
-					},
-					{
-						"indexed": true,
-						"internalType": "address",
-						"name": "buyer",
-						"type": "address"
 					},
 					{
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "price",
-						"type": "uint256"
-					}
-				],
-				"name": "TicketPurchased",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": true,
-						"internalType": "uint256",
-						"name": "tokenId",
 						"type": "uint256"
 					},
 					{
@@ -265,15 +217,59 @@
 						"internalType": "address",
 						"name": "buyer",
 						"type": "address"
+					}
+				],
+				"name": "Bought",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "eventId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "areaId",
+						"type": "uint256"
 					},
 					{
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "price",
 						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "seller",
+						"type": "address"
 					}
 				],
-				"name": "TicketSold",
+				"name": "Offered",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "previousOwner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "OwnershipTransferred",
 				"type": "event"
 			},
 			{
@@ -342,13 +338,85 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "tokenId",
+						"name": "_eventId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_areaId",
 						"type": "uint256"
 					}
 				],
-				"name": "buyTicket",
+				"name": "buyTicketFromOrganizer",
 				"outputs": [],
 				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "_name",
+						"type": "string"
+					},
+					{
+						"internalType": "address",
+						"name": "_organizer",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_organizerFeePercentage",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string[]",
+						"name": "_areas",
+						"type": "string[]"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "_prices",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "_quotas",
+						"type": "uint256[]"
+					}
+				],
+				"name": "createEvent",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "events",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"internalType": "address payable",
+						"name": "organizer",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "organizerFeePercentage",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -409,7 +477,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "organizerFeePercentage",
+				"name": "nextTicketId",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -418,6 +486,24 @@
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_ticketId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_price",
+						"type": "uint256"
+					}
+				],
+				"name": "offerTicket",
+				"outputs": [],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
@@ -428,19 +514,6 @@
 						"internalType": "address",
 						"name": "",
 						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "ownerFeePercentage",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -463,6 +536,32 @@
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "percentageFee",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_ticketId",
+						"type": "uint256"
+					}
+				],
+				"name": "purchaseTicket",
+				"outputs": [],
+				"stateMutability": "payable",
 				"type": "function"
 			},
 			{
@@ -526,19 +625,6 @@
 			{
 				"inputs": [
 					{
-						"internalType": "uint256",
-						"name": "tokenId",
-						"type": "uint256"
-					}
-				],
-				"name": "sellTicket",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
 						"internalType": "address",
 						"name": "operator",
 						"type": "address"
@@ -550,45 +636,6 @@
 					}
 				],
 				"name": "setApprovalForAll",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "_organizerFeePercentage",
-						"type": "uint256"
-					}
-				],
-				"name": "setOrganizerFeePercentage",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "_ownerFeePercentage",
-						"type": "uint256"
-					}
-				],
-				"name": "setOwnerFeePercentage",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "_ticketPrice",
-						"type": "uint256"
-					}
-				],
-				"name": "setTicketPrice",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -626,19 +673,6 @@
 				"type": "function"
 			},
 			{
-				"inputs": [],
-				"name": "ticketPrice",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
 				"inputs": [
 					{
 						"internalType": "uint256",
@@ -650,13 +684,33 @@
 				"outputs": [
 					{
 						"internalType": "uint256",
+						"name": "eventId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "areaId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "contract IERC721",
+						"name": "nft",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
 						"name": "price",
 						"type": "uint256"
 					},
 					{
-						"internalType": "address",
+						"internalType": "address payable",
 						"name": "owner",
 						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timesSold",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -713,24 +767,6 @@
 					}
 				],
 				"name": "transferOwnership",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "tokenId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "newPrice",
-						"type": "uint256"
-					}
-				],
-				"name": "updateTicketPrice",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -998,12 +1034,20 @@
 				"dweb:/ipfs/QmVBEei6aTnvYNZp2CHYVNKyZS4q1KkjANfY39WVXZXVoT"
 			]
 		},
-		"contracts/TicketMarketplace.sol": {
-			"keccak256": "0x1295c96f361393b03c99343a5953e628b10021f7b4fa5a4bf4f1c3a7044b4bdf",
+		"@openzeppelin/contracts@4.5.0/security/ReentrancyGuard.sol": {
+			"keccak256": "0x0e9621f60b2faabe65549f7ed0f24e8853a45c1b7990d47e8160e523683f3935",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://faddafcc152c08741df584f5eeb149c7b435935619845f057f436b8948606b21",
-				"dweb:/ipfs/QmRVMF6JUmgyaeaf4xNjfDpY7vLB2zZuG4tycN194Kran4"
+				"bzz-raw://287a2f8d5814dd0f05f22b740f18ca8321acc21c9bd03a6cb2203ea626e2f3f2",
+				"dweb:/ipfs/QmZRQv9iuwU817VuqkA2WweiaibKii69x9QxYBBEfbNEud"
+			]
+		},
+		"contracts/TicketMarketplace.sol": {
+			"keccak256": "0xc0b3903a263de4d52b6294670e3c7dfddc4d83d5f08969dc00f616642d568e0a",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4925003d38dad8796898f9c4adc1b4b11de661fdeb2dcdb0ef1ff4d92e709b5c",
+				"dweb:/ipfs/QmQaXXkABRuZh4waEJd2FHpRP8U964JanAzVNLhJ6ZjKbe"
 			]
 		}
 	},
