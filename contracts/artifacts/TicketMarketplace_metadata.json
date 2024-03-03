@@ -554,6 +554,11 @@
 			{
 				"inputs": [
 					{
+						"internalType": "contract IERC721",
+						"name": "_nft",
+						"type": "address"
+					},
+					{
 						"internalType": "uint256",
 						"name": "_ticketId",
 						"type": "uint256"
@@ -691,11 +696,6 @@
 						"internalType": "uint256",
 						"name": "areaId",
 						"type": "uint256"
-					},
-					{
-						"internalType": "contract IERC721",
-						"name": "nft",
-						"type": "address"
 					},
 					{
 						"internalType": "uint256",
@@ -1043,11 +1043,11 @@
 			]
 		},
 		"contracts/TicketMarketplace.sol": {
-			"keccak256": "0xc0b3903a263de4d52b6294670e3c7dfddc4d83d5f08969dc00f616642d568e0a",
+			"keccak256": "0xaa18d74d99999a367f7357f09264c2b94451fc813862ef327e2a4524edcbcea2",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://4925003d38dad8796898f9c4adc1b4b11de661fdeb2dcdb0ef1ff4d92e709b5c",
-				"dweb:/ipfs/QmQaXXkABRuZh4waEJd2FHpRP8U964JanAzVNLhJ6ZjKbe"
+				"bzz-raw://b84c6d42140707cec17f95cf5d639d6fe49c93c9dcf309b1dc8048133b186e93",
+				"dweb:/ipfs/QmR6Rbn16UXDNMYTTiKQvQL21WgSr7Zf8B1uN7A1qv9KC4"
 			]
 		}
 	},

@@ -26,7 +26,6 @@ contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721 {
     struct Ticket {
         uint256 eventId;
         uint256 areaId;
-        IERC721 nft;
         uint256 price;
         address payable owner;
         uint256 timesSold;
@@ -54,7 +53,6 @@ contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721 {
 
     constructor(uint256 _percentageFee) Ownable(msg.sender) ERC721("Ticket", "TK") {
         percentageFee = _percentageFee;
-        // nftContract = new NFTicket();
         /// @dev Test event and Area
         Event storage testEvent = events[nextEventId];
         testEvent.name = "Test Event";
@@ -164,33 +162,35 @@ contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721 {
             ticket.owner == msg.sender,
             "You dont have permission to sell this ticket"
         );
-        _transfer(msg.sender, address(this), _ticketId);
+        approve(address(this), _ticketId);
         ticket.price = _price;
         emit Offered(ticket.eventId, ticket.areaId, _price, msg.sender);
     }
 
-    function purchaseTicket(uint256 _ticketId) external payable nonReentrant {
+    function purchaseTicket(IERC721 _nft, uint256 _ticketId)
+        external
+        payable
+        nonReentrant
+    {
         require(_ticketId > 0 && _ticketId <= nextTicketId);
         Ticket storage ticket = tickets[_ticketId];
         require(ticket.timesSold > 0);
         require(msg.value >= ticket.price);
-
-        Event storage _event = events[ticket.eventId];
-        uint256 _feeAmountOwner = _getFeeAmount(ticket.price);
-        uint256 _feeAmountOrganizer = _getOrganizerFeeAmount(
-            ticket.price,
-            _event.organizerFeePercentage
-        );
-        uint _returnValue = msg.value - ticket.price;
-        address payable _seller = ticket.owner;
-        _seller.transfer(ticket.price - _feeAmountOwner - _feeAmountOrganizer);
-        _event.organizer.transfer(_feeAmountOrganizer);
-        payable(owner()).transfer(_feeAmountOwner);
-        if (_returnValue > 0) {
-            payable(msg.sender).transfer(_returnValue);
-        }
-
-        transferFrom(address(this), msg.sender, _ticketId);
+            Event storage _event = events[ticket.eventId];
+            uint256 _feeAmountOwner = _getFeeAmount(ticket.price);
+            uint256 _feeAmountOrganizer = _getOrganizerFeeAmount(
+                ticket.price,
+                _event.organizerFeePercentage
+            );
+            uint _returnValue = msg.value - ticket.price;
+            address payable _seller = ticket.owner;
+            _seller.transfer(ticket.price - _feeAmountOwner - _feeAmountOrganizer);
+            _event.organizer.transfer(_feeAmountOrganizer);
+            payable(owner()).transfer(_feeAmountOwner);
+            if (_returnValue > 0) {
+                payable(msg.sender).transfer(_returnValue);
+            }
+        _nft.transferFrom(_seller, msg.sender, _ticketId);
         ticket.owner = payable(msg.sender);
         emit Bought(
             _ticketId,
