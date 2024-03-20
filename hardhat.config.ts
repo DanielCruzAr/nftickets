@@ -8,6 +8,7 @@ const config: HardhatUserConfig = {
     tests: "./src/backend/test",
     cache: "./src/backend/cache",
     artifacts: "./src/backend/artifacts",
+    ignition: "./src/backend/ignition",
   },
   networks: {
     ganache: {
