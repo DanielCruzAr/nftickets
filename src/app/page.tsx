@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@chakra-ui/next-js";
 import Head from "next/head";
-import { Button, HStack } from "@chakra-ui/react";
+import { Button, Card, HStack } from "@chakra-ui/react";
 import { IWeb3Context, useWeb3Context } from "@/context/web3Context";
-// import {}
+import useEvents from "@/hooks/useEvents";
+
+const ChainID = 1337;
 
 export default function Home() {
     const {
@@ -13,6 +15,12 @@ export default function Home() {
         disconnect,
         state: { isAuthenticated, address, currentChain, provider },
     } = useWeb3Context() as IWeb3Context;
+
+    const events = useEvents();
+
+    const correctNetwork = useMemo(() => {
+        return currentChain === ChainID;
+    }, [currentChain]);
 
     return (
         <div>
@@ -57,6 +65,20 @@ export default function Home() {
                     </HStack>
                 </HStack>
             </HStack>
+            {isAuthenticated &&
+                (correctNetwork ? (
+                    <div>
+                        {events.map((event, index) => (
+                            <Card key={index} p={4} my={4}>
+                                <p>{event.name}</p>
+                                <p>{event.organizer}</p>
+                                <Link href={`/events/${event.id}`}>View</Link>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <p>Wrong network</p>
+                ))}
         </div>
     );
 }

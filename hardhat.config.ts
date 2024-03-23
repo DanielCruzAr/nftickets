@@ -10,6 +10,7 @@ const config: HardhatUserConfig = {
     artifacts: "./src/backend/artifacts",
     ignition: "./src/backend/ignition",
   },
+  defaultNetwork: "ganache",
   networks: {
     ganache: {
       url: "http://127.0.0.1:7545"

@@ -3,30 +3,14 @@ pragma solidity ^0.8.5;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./EventManagement.sol";
 
 /**
  * @title TicketMarketplace
  * @dev A contract for buying and selling tickets for events
  */
-contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721URIStorage {
-    struct Event {
-        string name;
-        // uint256 startTime;
-        // uint256 endTime;
-        address payable organizer;
-        uint256 organizerFeePercentage;
-        mapping(uint256 => Area) areas;
-    }
-
-    struct Area {
-        string area;
-        uint256 price;
-        uint256 quota;
-        uint256 soldTickets;
-    }
-
+contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage {
     struct Ticket {
         uint256 eventId;
         uint256 areaId;
@@ -36,17 +20,10 @@ contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721URIStorage {
         bool used;
     }
 
-    mapping(uint256 => Event) public events;
     mapping(uint256 => Ticket) public tickets;
-    uint256 private nextEventId = 1;
     uint256 public nextTicketId = 1;
-    uint256 public percentageFee; // Change to private
+    uint256 private percentageFee;
 
-    event NewEvent(
-        string indexed name,
-        address indexed organizer,
-        uint256 indexed eventId
-    );
     event Offered(
         uint256 eventId,
         uint256 areaId,
@@ -61,17 +38,8 @@ contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721URIStorage {
     );
 
     constructor(string memory _name, string memory _symbol, uint256 _percentageFee) 
-    Ownable() ERC721(_name, _symbol) {
+    EventManagement() ERC721(_name, _symbol) {
         percentageFee = _percentageFee;
-    }
-
-
-    function getArea(uint256 _eventId, uint256 _areaId)
-        external
-        view
-        returns (Area memory)
-    {
-        return (events[_eventId].areas[_areaId]);
     }
 
     function _getFeeAmount(uint256 _price) internal view returns (uint256) {
@@ -84,63 +52,6 @@ contract TicketMarketplace is Ownable, ReentrancyGuard, ERC721URIStorage {
         returns (uint256)
     {
         return (_price * _organizerFee)/100;
-    }
-
-    /**
-     * @dev Creates a new event. Only the owner can call this function
-     * @param _name Name of the event
-     * @param _organizer Address of the organizer
-     * @param _organizerFeePercentage Percentage of the organizer fee
-     * @param _areas Array of area names
-     * @param _prices Array of prices for each area
-     * @param _quotas Array of quotas for each area
-     *
-     * Emits a {NewEvent} event
-     *
-     * Requirements:
-        * - `_areas` and `_prices` must have the same length
-        * - `_areas` and `_quotas` must have the same length
-        * - `_organizerFeePercentage` must be less than 100
-     */
-    function createEvent(
-        string memory _name,
-        // uint256 _startTime,
-        // uint256 _endTime,
-        address _organizer,
-        uint256 _organizerFeePercentage,
-        string[] memory _areas,
-        uint256[] memory _prices,
-        uint256[] memory _quotas
-    ) external onlyOwner {
-        require(
-            _areas.length == _prices.length,
-            "Area IDs and prices length mismatch"
-        );
-        require(
-            _areas.length == _quotas.length, 
-            "Quotas length mismatch"
-        );
-        require(
-            _organizerFeePercentage < 100, 
-            "Organizer fee can't be 100%"
-        );
-
-        Event storage newEvent = events[nextEventId];
-        newEvent.name = _name;
-        // newEvent.startTime = _startTime;
-        // newEvent.endTime = _endTime;
-        newEvent.organizer = payable(_organizer);
-        newEvent.organizerFeePercentage = _organizerFeePercentage;
-
-        for (uint256 i = 0; i < _areas.length; i++) {
-            Area storage newArea = newEvent.areas[i + 1];
-            newArea.area = _areas[i];
-            newArea.price = _prices[i];
-            newArea.quota = _quotas[i];
-        }
-
-        emit NewEvent(_name, _organizer, nextEventId);
-        nextEventId++;
     }
 
     /**
