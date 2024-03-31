@@ -2,10 +2,9 @@
 
 import { createContext, FC, ReactNode, useContext } from "react";
 import useWeb3Provider, { IWeb3State } from "@/hooks/web3";
-import { ToastId } from "@chakra-ui/react";
 
 export interface IWeb3Context {
-    connectWallet: () => Promise<ToastId | undefined>;
+    connectWallet: () => void;
     disconnect: () => void;
     state: IWeb3State;
 }

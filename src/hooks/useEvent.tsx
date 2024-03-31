@@ -9,12 +9,14 @@ const useEvent = (eventId: number) => {
     const contract = useMarketplaceContract();
     const [event, setEvent] = useState<Event | null>(null);
     const [areas, setAreas] = useState<Area[]>([]);
+    const [loadingAreas, setLoadingAreas] = useState(true);
 
     useEffect(() => {
         if (!contract) return;
         let mounted = true;
 
         const getEventInfo = async () => {
+            
             try {
                 const event = await contract.events(eventId);
                 const eventObj = {
@@ -39,6 +41,8 @@ const useEvent = (eventId: number) => {
                 setEvent(eventObj);
             } catch (e) {
                 console.error(e);
+            } finally {
+                setLoadingAreas(false);
             }
         };
 
@@ -49,9 +53,9 @@ const useEvent = (eventId: number) => {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [contract]);
 
-    return { event, areas };
+    return { event, areas, loadingAreas };
 };
 
 export default useEvent;

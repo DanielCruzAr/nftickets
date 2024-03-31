@@ -6,8 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract EventManagement is Ownable {
     struct Event {
         string name;
-        // uint256 startTime;
-        // uint256 endTime;
+        string location;
+        bool isCancelled;
+        bool isCompleted;
+        uint256 startTime;
         address payable organizer;
         uint256 organizerFeePercentage;
         uint256 totalAreas;
@@ -58,8 +60,8 @@ contract EventManagement is Ownable {
      */
     function createEvent(
         string memory _name,
-        // uint256 _startTime,
-        // uint256 _endTime,
+        uint256 _startTime,
+        string memory _location,
         address _organizer,
         uint256 _organizerFeePercentage,
         string[] memory _areas,
@@ -81,11 +83,13 @@ contract EventManagement is Ownable {
 
         Event storage newEvent = events[nextEventId];
         newEvent.name = _name;
-        // newEvent.startTime = _startTime;
-        // newEvent.endTime = _endTime;
+        newEvent.location = _location;
+        newEvent.startTime = _startTime;
         newEvent.organizer = payable(_organizer);
         newEvent.organizerFeePercentage = _organizerFeePercentage;
         newEvent.totalAreas = _areas.length;
+        newEvent.isCancelled = false;
+        newEvent.isCompleted = false;
         
         for (uint256 i = 0; i < _areas.length; i++) {
             Area storage newArea = newEvent.areas[i + 1];

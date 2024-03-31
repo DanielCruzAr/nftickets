@@ -1,8 +1,9 @@
 export interface Event {
     id: number;
+    date: string;
     name: string;
     organizer: string;
-    // location: string;
+    location: string;
     // isCancelled: boolean;
     // isCompleted: boolean;
 }

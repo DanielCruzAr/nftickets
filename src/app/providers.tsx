@@ -1,12 +1,12 @@
 "use client";
 
 import Web3ContextProvider from "@/context/web3Context";
-import { ChakraProvider } from "@chakra-ui/react";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <ChakraProvider>
+        <AntdRegistry>
             <Web3ContextProvider>{children}</Web3ContextProvider>
-        </ChakraProvider>
+        </AntdRegistry>
     );
 }

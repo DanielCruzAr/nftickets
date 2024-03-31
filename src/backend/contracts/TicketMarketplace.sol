@@ -54,33 +54,12 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         return (_price * _organizerFee)/100;
     }
 
-    /**
-     * @dev Buys a ticket for an event from the organizer. The buyer can't be the organizer
-     * @param _eventId ID of the event
-     * @param _areaId ID of the area
-     *
-     * Requirements:
-        * - The buyer can't be the organizer
-        * - The buyer must send at least the price of the ticket
-        * - The area must have available tickets
-     */
-    function buyTicketFromOrganizer(uint256 _eventId, uint256 _areaId, string memory _tokenURI)
-        external
-        payable
-        nonReentrant
-    {
-        Event storage _event = events[_eventId];
-        require(msg.sender != _event.organizer, "Organizer can't buy");
-        uint256 _price = _event.areas[_areaId].price;
-        require(
-            msg.value >= _price,
-            "Insufficient payment"
-        );
-        require(
-            _event.areas[_areaId].quota > _event.areas[_areaId].soldTickets,
-            "Sold out"
-        );
-
+    function _createTicket(
+        uint256 _eventId,
+        uint256 _areaId,
+        uint256 _price,
+        string memory _tokenURI
+    ) internal {
         _safeMint(msg.sender, nextTicketId);
         _setTokenURI(nextTicketId, _tokenURI);
         Ticket storage newTicket = tickets[nextTicketId];
@@ -90,8 +69,52 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         newTicket.owner = payable(msg.sender);
         newTicket.timesSold = 1;
         newTicket.used = false;
-        _event.areas[_areaId].soldTickets++;
         nextTicketId++;
+    }
+
+    /**
+     * @dev Buys a ticket for an event from the organizer. The buyer can't be the organizer
+     * @param _eventId ID of the event
+     * @param _areaId ID of the area
+     *
+     * Requirements:
+        * - The user can't buy more than 4 tickets
+        * - The event must not be cancelled
+        * - The event must not be completed
+        * - The event must not have started
+        * - The buyer can't be the organizer
+        * - The buyer must send at least the price of the ticket
+        * - The area must have available tickets
+     */
+    function buyTicketFromOrganizer(
+        uint256 _amount, 
+        uint256 _eventId, 
+        uint256 _areaId, 
+        string memory _tokenURI
+    )
+        external
+        payable
+        nonReentrant
+    {
+        require(_amount <= 4, "Max 4 tickets per user");
+        Event storage _event = events[_eventId];
+        require(msg.sender != _event.organizer, "Organizer can't buy");
+        require(_event.startTime > block.timestamp, "Event has started");
+        require(!_event.isCancelled, "Event is cancelled");
+        require(!_event.isCompleted, "Event is completed");
+        uint256 _price = _event.areas[_areaId].price * _amount;
+        require(
+            msg.value >= _price,
+            "Insufficient payment"
+        );
+        require(
+            _event.areas[_areaId].quota > _event.areas[_areaId].soldTickets,
+            "Sold out"
+        );
+
+        for (uint256 i = 0; i < _amount; i++) {
+            _createTicket(_eventId, _areaId, _price, _tokenURI);
+        }
 
         uint256 _feeAmount = _getFeeAmount(_price);
         uint256 _returnValue = msg.value - _price;
@@ -145,7 +168,11 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         * - The buyer must send at least the price of the ticket
         * - The ticket must not be used
      */
-    function purchaseTicket(IERC721 _nft, uint256 _ticketId)
+    function purchaseTicket(
+        IERC721 _nft, 
+        uint256 _ticketId, 
+        string memory _tokenURI
+    )
         external
         payable
         nonReentrant
@@ -169,8 +196,10 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         if (_returnValue > 0) {
             payable(msg.sender).transfer(_returnValue);
         }
+        _setTokenURI(_ticketId, _tokenURI);
         _nft.transferFrom(_seller, msg.sender, _ticketId);
         ticket.owner = payable(msg.sender);
+        ticket.timesSold++;
         emit Bought(
             _ticketId,
             ticket.price,

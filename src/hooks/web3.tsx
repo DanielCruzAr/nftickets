@@ -1,9 +1,8 @@
 import { BrowserProvider, ethers, JsonRpcSigner } from "ethers";
-import { useToast } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export interface IWeb3State {
-    address: string | null;
     currentChain: number | null;
     signer: JsonRpcSigner | null;
     provider: BrowserProvider | null;
@@ -12,14 +11,12 @@ export interface IWeb3State {
 
 const useWeb3Provider = () => {
     const initialWeb3State = {
-        address: null,
         currentChain: null,
         signer: null,
         provider: null,
         isAuthenticated: false,
     };
 
-    const toast = useToast();
     const [state, setState] = useState<IWeb3State>(initialWeb3State);
 
     const connectWallet = useCallback(async () => {
@@ -29,40 +26,26 @@ const useWeb3Provider = () => {
             const { ethereum } = window as any;
 
             if (!ethereum) {
-                return toast({
-                    title: "Error",
-                    description: "Please install MetaMask",
-                    status: "error",
-                    duration: 5000,
-                    isClosable: true,
-                });
+                return toast("Please install MetaMask", { type: "error" });
             }
             const provider = new ethers.BrowserProvider(ethereum);
 
-            const accounts: string[] = await provider.send(
-                "eth_requestAccounts",
-                []
+            const signer = await provider.getSigner();
+            const chain = Number(
+                await (
+                    await provider.getNetwork()
+                ).chainId
             );
 
-            if (accounts.length > 0) {
-                const signer = await provider.getSigner();
-                const chain = Number(
-                    await (
-                        await provider.getNetwork()
-                    ).chainId
-                );
+            setState({
+                ...state,
+                signer,
+                currentChain: chain,
+                provider,
+                isAuthenticated: true,
+            });
 
-                setState({
-                    ...state,
-                    address: accounts[0],
-                    signer,
-                    currentChain: chain,
-                    provider,
-                    isAuthenticated: true,
-                });
-
-                localStorage.setItem("isAuthenticated", "true");
-            }
+            localStorage.setItem("isAuthenticated", "true");
         } catch {}
     }, [state, toast]);
 

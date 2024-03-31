@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import useMarketplaceContract from "./useMarketplaceContract";
 import { Event } from "@/types/eventTypes";
+import { unixToDateString } from "@/utils/datetimeUtils";
 
 const useEvents = () => {
     const contract = useMarketplaceContract();
@@ -18,7 +19,9 @@ const useEvents = () => {
                     const event = await contract.events(i);
                     const eventObj = {
                         id: i,
+                        date: unixToDateString(Number(event.startTime)),
                         name: event.name,
+                        location: event.location,
                         organizer: event.organizer,
                     };
                     events_.push(eventObj);

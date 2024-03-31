@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import hre from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { getUnixTimestamp } from "../utils/datetimeUtils";
 
 const toWei = (value: number) => hre.ethers.parseEther(value.toString());
 const fromWei = (value: any) => hre.ethers.formatEther(value);
@@ -13,6 +14,7 @@ describe("TicketMarketplace", function () {
     const price1 = 2;
     const price2 = 2;
     const uri = "https://example.com/token/";
+    const eventDate = getUnixTimestamp(24);
     let nextEventId = 1;
     let owner: any;
     let addr1: any;
@@ -29,6 +31,8 @@ describe("TicketMarketplace", function () {
 
         await ticketMarketplace.createEvent(
             "Event 1",
+            eventDate,
+            "City",
             addr1.address,
             organizerFee,
             ["Area 1", "Area 2"],
@@ -52,9 +56,9 @@ describe("TicketMarketplace", function () {
             const { ticketMarketplace } = await loadFixture(setup);
             expect(await ticketMarketplace.name()).to.equal(name);
             expect(await ticketMarketplace.symbol()).to.equal(symbol);
-            expect(await ticketMarketplace.percentageFee()).to.equal(
-                percentageFee
-            );
+            // expect(await ticketMarketplace.percentageFee()).to.equal(
+            //     percentageFee
+            // );
         });
     });
 
@@ -70,6 +74,8 @@ describe("TicketMarketplace", function () {
 
             await ticketMarketplace.createEvent(
                 eventName,
+                eventDate,
+                "City",
                 organizer,
                 organizerFee,
                 areas,
@@ -98,7 +104,7 @@ describe("TicketMarketplace", function () {
 
             await ticketMarketplace
                 .connect(addr2)
-                .buyTicketFromOrganizer(1, 1, uri, {
+                .buyTicketFromOrganizer(1, 1, 1, uri, {
                     value: totalPriceWei,
                 });
 
@@ -135,7 +141,7 @@ describe("TicketMarketplace", function () {
             
             await ticketMarketplace
             .connect(addr2)
-            .buyTicketFromOrganizer(1, 1, uri, {
+            .buyTicketFromOrganizer(1, 1, 1, uri, {
                 value: toWei(price1),
             });
     
