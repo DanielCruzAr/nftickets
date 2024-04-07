@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 export interface IWeb3State {
+    address: string | null;
     currentChain: number | null;
     signer: JsonRpcSigner | null;
     provider: BrowserProvider | null;
@@ -11,6 +12,7 @@ export interface IWeb3State {
 
 const useWeb3Provider = () => {
     const initialWeb3State = {
+        address: null,
         currentChain: null,
         signer: null,
         provider: null,
@@ -30,6 +32,8 @@ const useWeb3Provider = () => {
             }
             const provider = new ethers.BrowserProvider(ethereum);
 
+            const accounts: string[] = await provider.send("eth_requestAccounts", []);
+
             const signer = await provider.getSigner();
             const chain = Number(
                 await (
@@ -39,6 +43,7 @@ const useWeb3Provider = () => {
 
             setState({
                 ...state,
+                address: accounts.length > 0 ? accounts[0] : null,
                 signer,
                 currentChain: chain,
                 provider,

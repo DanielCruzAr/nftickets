@@ -15,3 +15,13 @@ export interface Area {
     quota: number;
     soldTickets: number;
 }
+
+export interface Ticket {
+    id: number;
+    eventId: number;
+    areaId: number;
+    price: number;
+    owner: string;
+    timesSold: number;
+    used: boolean;
+}

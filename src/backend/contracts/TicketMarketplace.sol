@@ -17,6 +17,7 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         uint256 price;
         address payable owner;
         uint256 timesSold;
+        bool offered;
         bool used;
     }
 
@@ -25,8 +26,8 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
     uint256 private percentageFee;
 
     event Offered(
-        uint256 eventId,
-        uint256 areaId,
+        uint256 ticketId,
+        uint256 indexed eventId,
         uint256 price,
         address indexed seller
     );
@@ -58,7 +59,8 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         uint256 _eventId,
         uint256 _areaId,
         uint256 _price,
-        string memory _tokenURI
+        string memory _tokenURI,
+        address _seller
     ) internal {
         _safeMint(msg.sender, nextTicketId);
         _setTokenURI(nextTicketId, _tokenURI);
@@ -69,6 +71,13 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         newTicket.owner = payable(msg.sender);
         newTicket.timesSold = 1;
         newTicket.used = false;
+        newTicket.offered = false;
+        emit Bought(
+            nextTicketId, 
+            _price, 
+            _seller, 
+            msg.sender
+        );
         nextTicketId++;
     }
 
@@ -102,9 +111,10 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         require(_event.startTime > block.timestamp, "Event has started");
         require(!_event.isCancelled, "Event is cancelled");
         require(!_event.isCompleted, "Event is completed");
-        uint256 _price = _event.areas[_areaId].price * _amount;
+        uint256 _unitPrice = _event.areas[_areaId].price;
+        uint256 _totalPrice = _unitPrice * _amount;
         require(
-            msg.value >= _price,
+            msg.value >= _totalPrice,
             "Insufficient payment"
         );
         require(
@@ -113,12 +123,19 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         );
 
         for (uint256 i = 0; i < _amount; i++) {
-            _createTicket(_eventId, _areaId, _price, _tokenURI);
+            _createTicket(
+                _eventId, 
+                _areaId,
+                _unitPrice,
+                _tokenURI, 
+                _event.organizer
+            );
+            _event.areas[_areaId].soldTickets++;
         }
 
-        uint256 _feeAmount = _getFeeAmount(_price);
-        uint256 _returnValue = msg.value - _price;
-        _event.organizer.transfer(_price - _feeAmount);
+        uint256 _feeAmount = _getFeeAmount(_totalPrice);
+        uint256 _returnValue = msg.value - _totalPrice;
+        _event.organizer.transfer(_totalPrice - _feeAmount);
         payable(owner()).transfer(_feeAmount);
         if (_returnValue > 0) {
             payable(msg.sender).transfer(_returnValue);
@@ -153,7 +170,8 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         require(!ticket.used, "Ticket is used");
         approve(address(this), _ticketId);
         ticket.price = _price;
-        emit Offered(ticket.eventId, ticket.areaId, _price, msg.sender);
+        ticket.offered = true;
+        emit Offered(_ticketId, ticket.eventId, _price, msg.sender);
     }
 
     /**
@@ -199,6 +217,7 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         _setTokenURI(_ticketId, _tokenURI);
         _nft.transferFrom(_seller, msg.sender, _ticketId);
         ticket.owner = payable(msg.sender);
+        ticket.offered = false;
         ticket.timesSold++;
         emit Bought(
             _ticketId,

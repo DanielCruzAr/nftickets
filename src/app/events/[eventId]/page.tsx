@@ -6,6 +6,9 @@ import useBuyFromOrganizer from "@/hooks/useBuyFromOrganizer";
 import useEvent from "@/hooks/useEvent";
 import { Button, Card, Form, Layout, Input, InputNumber } from "antd";
 import { ToastContainer, toast } from "react-toastify";
+import useUserTickets from "@/hooks/useUserTickets";
+import TicketCard from "@/components/TicketCard";
+import useBuyFromReseller from "@/hooks/useBuyFromReseller";
 
 const { Content } = Layout;
 
@@ -13,7 +16,9 @@ const toWei = (value: number) => ethers.parseEther(value.toString());
 
 const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
     const { event, areas, loadingAreas } = useEvent(eventId);
+    const { offeredTickets } = useUserTickets(null, eventId ? eventId : 0);
     const { buyFromOrganizer, loading } = useBuyFromOrganizer();
+    const { buyFromReseller, loading: loadingReseller } = useBuyFromReseller();
     const [selectedArea, setSelectedArea] = useState<number>();
     const [price, setPrice] = useState<number>(0);
     const [form] = Form.useForm();
@@ -41,6 +46,16 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
         );
     };
 
+    const handleBuyFromReseller = async (
+        ticketId: number,
+        uri: string,
+        price: number
+    ) => {
+        const totalPriceWei = toWei(price);
+
+        await buyFromReseller(ticketId, uri, totalPriceWei.toString());
+    };
+
     return (
         <Layout className="layout">
             {!loadingAreas ? (
@@ -59,8 +74,8 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
                                     style={{
                                         backgroundColor:
                                             selectedArea === area.id
-                                                ? "blue"
-                                                : "white",
+                                                ? "#1890ff"
+                                                : "",
                                     }}
                                     onClick={() =>
                                         handleAreaSelect(area.id, area.price)
@@ -96,11 +111,43 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
                         </Form.Item>
 
                         <Form.Item>
-                            <Button type="primary" htmlType="submit">
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                loading={loading}
+                            >
                                 Submit
                             </Button>
                         </Form.Item>
                     </Form>
+                    <div>
+                        {offeredTickets.length > 0 ? (
+                            <div>
+                                <h2>Offered Tickets</h2>
+                                {offeredTickets.map((ticket) => (
+                                    <div key={ticket.id}>
+                                        <TicketCard
+                                            ticket={ticket}
+                                            offered={true}
+                                        />
+                                        <Button
+                                            type="primary"
+                                            onClick={() => {
+                                                handleBuyFromReseller(
+                                                    ticket.id,
+                                                    "https://example.com",
+                                                    ticket.price
+                                                );
+                                            }}
+                                            loading={loadingReseller}
+                                        >
+                                            Buy
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : null}
+                    </div>
                 </Content>
             ) : (
                 <h1>Loading...</h1>

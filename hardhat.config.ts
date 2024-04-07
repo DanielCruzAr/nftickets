@@ -2,7 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.5",
+  solidity: "0.8.10",
   paths: {
     sources: "./src/backend/contracts",
     tests: "./src/backend/test",

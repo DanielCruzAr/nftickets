@@ -21,6 +21,8 @@ const useEvent = (eventId: number) => {
                 const event = await contract.events(eventId);
                 const eventObj = {
                     id: eventId,
+                    date: new Date(Number(event.date) * 1000).toLocaleString(),
+                    location: event.location,
                     name: event.name,
                     organizer: event.organizer,
                 };

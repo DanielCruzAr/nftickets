@@ -37,7 +37,7 @@ describe("TicketMarketplace", function () {
             organizerFee,
             ["Area 1", "Area 2"],
             [toWei(price1), toWei(price2)],
-            [2, 1]
+            [5, 1]
         );
         nextEventId++;
 
@@ -93,12 +93,12 @@ describe("TicketMarketplace", function () {
     describe("Buy ticket from organizer", function () {
         it("Should buy a ticket from organizer", async function () {
             const { ticketMarketplace } = await loadFixture(setup);
+            const totalPriceWei = toWei(price1);
+            const organizerInitialBalance =
+                await hre.ethers.provider.getBalance(addr1.address);
             const ownerInitialBalance = await hre.ethers.provider.getBalance(
                 owner.address
             );
-            const organizerInitialBalance =
-                await hre.ethers.provider.getBalance(addr1.address);
-            const totalPriceWei = toWei(price1);
             const amountOwner = price1 * (percentageFee / 100);
             const amountOrganizer = price1 - amountOwner;
 
@@ -114,6 +114,13 @@ describe("TicketMarketplace", function () {
                 addr2.address,
                 "Owner is wrong"
             );
+            expect(buyedTicket.price).to.equal(totalPriceWei, "Price is wrong");
+            expect(buyedTicket.timesSold).to.equal(1, "Times sold is wrong");
+            expect(buyedTicket.used).to.equal(false, "Used is wrong");
+            expect(buyedTicket.offered).to.equal(false, "Offered is wrong");
+
+            const area = await ticketMarketplace.getArea(1, 1);
+            expect(area.soldTickets).to.equal(1, "Sold tickets is wrong");
 
             const ownerFinalBalance = await hre.ethers.provider.getBalance(
                 owner.address
@@ -130,6 +137,12 @@ describe("TicketMarketplace", function () {
                 +fromWei(organizerInitialBalance) + amountOrganizer,
                 "Organizer balance is wrong"
             );
+
+            // emit Bought event
+            const emittedEvent = await ticketMarketplace.queryFilter(
+                ticketMarketplace.filters.Bought()
+            );
+            expect(emittedEvent.length).to.equal(1);
         });
     });
 
@@ -138,17 +151,18 @@ describe("TicketMarketplace", function () {
             const { ticketMarketplace } = await loadFixture(setup);
             const contractAddress = await ticketMarketplace.getAddress();
             const priceOffer = toWei(1.5);
-            
+
             await ticketMarketplace
-            .connect(addr2)
-            .buyTicketFromOrganizer(1, 1, 1, uri, {
-                value: toWei(price1),
-            });
-    
+                .connect(addr2)
+                .buyTicketFromOrganizer(1, 1, 1, uri, {
+                    value: toWei(price1),
+                });
+
             await ticketMarketplace.connect(addr2).offerTicket(1, priceOffer);
-            
+
             const ticket = await ticketMarketplace.tickets(1);
             expect(ticket.price).to.equal(priceOffer);
+            expect(ticket.offered).to.equal(true);
             expect(await ticketMarketplace.getApproved(1)).to.equal(
                 contractAddress
             );
@@ -158,14 +172,86 @@ describe("TicketMarketplace", function () {
     describe("Buy ticket from reseller", function () {
         it("Should buy a ticket from reseller", async function () {
             const { ticketMarketplace } = await loadFixture(setup);
-            const ownerInitialBalance = await hre.ethers.provider.getBalance(
+            const contractAddress = await ticketMarketplace.getAddress();
+
+            // Buy ticket from organizer
+            const totalPriceWei = toWei(price1);
+            const priceOffer = 2.5;
+            const priceOfferWei = toWei(1.5);
+            await ticketMarketplace
+                .connect(addrs[0])
+                .buyTicketFromOrganizer(1, 1, 1, uri, {
+                    value: totalPriceWei,
+                });
+
+            const ownerInitialBalanceWei = await hre.ethers.provider.getBalance(
                 owner.address
             );
+            const ownerInitialBalance = Number(+fromWei(ownerInitialBalanceWei));
             const organizerInitialBalance =
                 await hre.ethers.provider.getBalance(addr1.address);
-            // const resellerInitialBalance =
-            //     await hre.ethers.provider.getBalance(addrs.address);
-            console.log("rest of the address", addrs[0].address);
+            const resellerInitialBalance = await hre.ethers.provider.getBalance(
+                addrs[0].address
+            );
+
+            await ticketMarketplace
+                .connect(addrs[0])
+                .offerTicket(1, priceOfferWei);
+            await ticketMarketplace
+                .connect(addrs[1])
+                .purchaseTicket(contractAddress, 1, uri, {
+                    value: priceOfferWei,
+                });
+
+            // Test ticket data
+            const buyedTicket = await ticketMarketplace.tickets(1);
+            expect(buyedTicket.owner).to.equal(
+                addrs[1].address,
+                "Owner is wrong"
+            );
+            expect(await ticketMarketplace.ownerOf(1)).to.equal(
+                addrs[1].address,
+                "Owner is wrong"
+            );
+            expect(buyedTicket.price).to.equal(priceOfferWei, "Price is wrong");
+            expect(buyedTicket.timesSold).to.equal(2, "Times sold is wrong");
+            expect(buyedTicket.offered).to.equal(false, "Offered is wrong");
+
+            // Test emitted events
+            const emittedEvent = await ticketMarketplace.queryFilter(
+                ticketMarketplace.filters.Bought()
+            );
+            expect(emittedEvent.length).to.equal(2);
+
+            // Test balances
+            const amountOwner = priceOffer * (percentageFee / 100);
+            const amountOrganizer = priceOffer * (organizerFee / 100);
+            const ownerFinalBalanceWei = await hre.ethers.provider.getBalance(
+                owner.address
+            );
+            const ownerFinalBalance = Number(+fromWei(ownerFinalBalanceWei));
+            console.log("balances: ", ownerFinalBalance - ownerInitialBalance);
+            const organizerFinalBalance = await hre.ethers.provider.getBalance(
+                addr1.address
+            );
+            const resellerFinalBalance = await hre.ethers.provider.getBalance(
+                addrs[0].address
+            );
+            expect(ownerFinalBalance).to.equal(
+                ownerInitialBalance + amountOwner,
+                "Owner balance is wrong"
+            );
+            expect(+fromWei(organizerFinalBalance)).to.equal(
+                +fromWei(organizerInitialBalance) + amountOrganizer,
+                "Organizer balance is wrong"
+            );
+            expect(+fromWei(resellerFinalBalance)).to.equal(
+                +fromWei(resellerInitialBalance) +
+                    priceOffer -
+                    amountOrganizer -
+                    amountOwner,
+                "Reseller balance is wrong"
+            );
         });
     });
 });
