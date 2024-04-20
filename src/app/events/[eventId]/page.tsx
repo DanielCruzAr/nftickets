@@ -6,7 +6,7 @@ import useBuyFromOrganizer from "@/hooks/useBuyFromOrganizer";
 import useEvent from "@/hooks/useEvent";
 import { Button, Card, Form, Layout, Input, InputNumber } from "antd";
 import { ToastContainer, toast } from "react-toastify";
-import useUserTickets from "@/hooks/useUserTickets";
+import useEventTickets from "@/hooks/useEventTickets";
 import TicketCard from "@/components/TicketCard";
 import useBuyFromReseller from "@/hooks/useBuyFromReseller";
 
@@ -16,7 +16,7 @@ const toWei = (value: number) => ethers.parseEther(value.toString());
 
 const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
     const { event, areas, loadingAreas } = useEvent(eventId);
-    const { offeredTickets } = useUserTickets(null, eventId ? eventId : 0);
+    const { eventTickets } = useEventTickets(eventId);
     const { buyFromOrganizer, loading } = useBuyFromOrganizer();
     const { buyFromReseller, loading: loadingReseller } = useBuyFromReseller();
     const [selectedArea, setSelectedArea] = useState<number>();
@@ -121,10 +121,10 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
                         </Form.Item>
                     </Form>
                     <div>
-                        {offeredTickets.length > 0 ? (
+                        {eventTickets.length > 0 ? (
                             <div>
                                 <h2>Offered Tickets</h2>
-                                {offeredTickets.map((ticket) => (
+                                {eventTickets.map((ticket) => (
                                     <div key={ticket.id}>
                                         <TicketCard
                                             ticket={ticket}

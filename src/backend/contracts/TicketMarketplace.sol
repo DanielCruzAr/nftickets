@@ -29,6 +29,7 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         uint256 ticketId,
         uint256 indexed eventId,
         uint256 price,
+        uint256 timestamp,
         address indexed seller
     );
     event Bought(
@@ -168,10 +169,17 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
             "You dont have permission to sell this ticket"
         );
         require(!ticket.used, "Ticket is used");
+        require(!ticket.offered, "Ticket already offered");
         approve(address(this), _ticketId);
         ticket.price = _price;
         ticket.offered = true;
-        emit Offered(_ticketId, ticket.eventId, _price, msg.sender);
+        emit Offered(
+            _ticketId, 
+            ticket.eventId, 
+            _price, 
+            block.timestamp,
+            msg.sender
+        );
     }
 
     /**

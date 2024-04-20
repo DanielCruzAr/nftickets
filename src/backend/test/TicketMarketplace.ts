@@ -167,6 +167,36 @@ describe("TicketMarketplace", function () {
                 contractAddress
             );
         });
+        it("Should not offer a ticket if it has already been offered", async function () {
+            const { ticketMarketplace } = await loadFixture(setup);
+            const contractAddress = await ticketMarketplace.getAddress();
+            const priceOffer = toWei(1.5);
+
+            await ticketMarketplace
+                .connect(addr2)
+                .buyTicketFromOrganizer(1, 1, 1, uri, {
+                    value: toWei(price1),
+                });
+
+            await ticketMarketplace.connect(addr2).offerTicket(1, priceOffer);
+
+            await expect(
+                ticketMarketplace.connect(addr2).offerTicket(1, priceOffer)
+            ).to.be.revertedWith("Ticket already offered");
+
+            await ticketMarketplace
+                .connect(addrs[1])
+                .purchaseTicket(contractAddress, 1, uri, {
+                    value: priceOffer,
+                });
+
+            await ticketMarketplace.connect(addrs[1]).offerTicket(1, priceOffer);
+
+            const emittedEvent = await ticketMarketplace.queryFilter(
+                ticketMarketplace.filters.Offered()
+            );
+            expect(emittedEvent.length).to.equal(2, "Event not emitted");
+        });
     });
 
     describe("Buy ticket from reseller", function () {
@@ -187,7 +217,9 @@ describe("TicketMarketplace", function () {
             const ownerInitialBalanceWei = await hre.ethers.provider.getBalance(
                 owner.address
             );
-            const ownerInitialBalance = Number(+fromWei(ownerInitialBalanceWei));
+            const ownerInitialBalance = Number(
+                +fromWei(ownerInitialBalanceWei)
+            );
             const organizerInitialBalance =
                 await hre.ethers.provider.getBalance(addr1.address);
             const resellerInitialBalance = await hre.ethers.provider.getBalance(

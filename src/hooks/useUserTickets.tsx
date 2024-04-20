@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 
 const fromWei = (value: string) => ethers.formatEther(value);
 
-const useUserTickets = (address: string|null = null, eventId: number|null = null) => {
+const useUserTickets = (address: string) => {
     const contract = useMarketplaceContract();
     const [userTickets, setUserTickets] = useState<Ticket[]>([]);
     const [offeredTickets, setOfferedTickets] = useState<Ticket[]>([]);
@@ -14,30 +14,37 @@ const useUserTickets = (address: string|null = null, eventId: number|null = null
         if (!contract) return;
         let mounted = true;
 
-        const getFilterResults = async (filter: any, bought: boolean = true) => {
-            const tickets: Ticket[] = (await Promise.all(
-                filter.map(async (i: any) => {
-                    i = i.args;
-                    if (address) {
-                        let nftOwner: string = await contract.ownerOf(i.ticketId);
+        const getFilterResults = async (
+            filter: any,
+            bought: boolean = true
+        ) => {
+            const tickets: Ticket[] = (
+                await Promise.all(
+                    filter.map(async (i: any) => {
+                        i = i.args;
+                        let nftOwner: string = await contract.ownerOf(
+                            i.ticketId
+                        );
                         if (nftOwner.toLowerCase() !== address) return null; //TODO: check if addresses are case sensitive
-                    }
-                    const ticket = await contract.tickets(i.ticketId);
-                    if (ticket.offered && bought) return null; // Don't show tickets that are offered in event page
-                    return {
-                        id: Number(i.ticketId),
-                        eventId: Number(ticket.eventId),
-                        areaId: Number(ticket.areaId),
-                        price: Number(fromWei(ticket.price)),
-                        owner: ticket.owner,
-                        timesSold: Number(ticket.timesSold),
-                        used: ticket.used,
-                    };
-                })
-            )).filter((ticket): ticket is Ticket => ticket !== null);
+                        const ticket = await contract.tickets(i.ticketId);
+                        if (ticket.offered && bought) {
+                            return null;
+                        }
+                        return {
+                            id: Number(i.ticketId),
+                            eventId: Number(ticket.eventId),
+                            areaId: Number(ticket.areaId),
+                            price: Number(fromWei(ticket.price)),
+                            owner: ticket.owner,
+                            timesSold: Number(ticket.timesSold),
+                            used: ticket.used,
+                        };
+                    })
+                )
+            ).filter((ticket): ticket is Ticket => ticket !== null);
             return tickets;
         };
-        
+
         const getUserTickets = async () => {
             try {
                 const boughtFilter = contract.filters.Bought(
@@ -48,12 +55,15 @@ const useUserTickets = (address: string|null = null, eventId: number|null = null
                 );
                 const offeredFilter = contract.filters.Offered(
                     null,
-                    eventId,
+                    null,
+                    null,
                     null,
                     address
                 );
                 const boughtResults = await contract.queryFilter(boughtFilter);
-                const offeredResults = await contract.queryFilter(offeredFilter);
+                const offeredResults = await contract.queryFilter(
+                    offeredFilter
+                );
                 const tickets = await getFilterResults(boughtResults);
                 const offered = await getFilterResults(offeredResults, false);
                 setUserTickets(tickets);
@@ -72,7 +82,7 @@ const useUserTickets = (address: string|null = null, eventId: number|null = null
         };
     }, [contract]);
 
-    return { userTickets, offeredTickets};
+    return { userTickets, offeredTickets };
 };
 
 export default useUserTickets;
