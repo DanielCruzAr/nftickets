@@ -1,0 +1,5 @@
+npx hardhat ignition deploy .\src\backend\ignition\modules\TicketMarketplace.ts --reset
+
+npx hardhat test --network hardhat
+
+npx hardhat run .\src\backend\scripts\createTestEvents.ts

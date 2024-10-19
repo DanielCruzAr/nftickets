@@ -34,24 +34,22 @@ const useWeb3Provider = () => {
 
             const accounts: string[] = await provider.send("eth_requestAccounts", []);
 
-            const signer = await provider.getSigner();
-            const chain = Number(
-                await (
-                    await provider.getNetwork()
-                ).chainId
-            );
-
-            setState({
-                ...state,
-                address: accounts.length > 0 ? accounts[0] : null,
-                signer,
-                currentChain: chain,
-                provider,
-                isAuthenticated: true,
-            });
-
-            localStorage.setItem("isAuthenticated", "true");
-        } catch {}
+            if (accounts.length > 0) {
+                const signer = await provider.getSigner();
+                const chain = Number(await (await provider.getNetwork()).chainId);
+        
+                setState({
+                  ...state,
+                  address: accounts[0],
+                  signer,
+                  currentChain: chain,
+                  provider,
+                  isAuthenticated: true,
+                });
+        
+                localStorage.setItem("isAuthenticated", "true");
+              }
+            } catch {}
     }, [state, toast]);
 
     const disconnect = () => {
@@ -70,13 +68,17 @@ const useWeb3Provider = () => {
     useEffect(() => {
         if (typeof (window as any).ethereum === "undefined") return;
 
-        (window as any).ethereum.on("accountsChanged", (network: string[]) => {
-            setState({ ...state, currentChain: Number(network) });
-        });
+    (window as any).ethereum.on("accountsChanged", (accounts: string[]) => {
+      setState({ ...state, address: accounts[0] });
+    });
 
-        return () => {
-            (window as any).ethereum.removeAllListeners();
-        };
+    (window as any).ethereum.on("networkChanged", (network: string) => {
+      setState({ ...state, currentChain: Number(network) });
+    });
+
+    return () => {
+      (window as any).ethereum.removeAllListeners();
+    };
     }, [state]);
 
     return {
