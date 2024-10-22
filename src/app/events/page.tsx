@@ -22,7 +22,7 @@ export default function Events() {
                     <Card key={index}>
                         <p>{event.name}</p>
                         <p>{event.location}</p>
-                        <p>{event.date}</p>
+                        <p>{event.startTime}</p>
                         <a href={`/events/${event.id}`}>View</a>
                     </Card>
                 ))}

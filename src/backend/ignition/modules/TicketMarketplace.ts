@@ -3,7 +3,7 @@ import { artifacts } from "hardhat";
 
 const NAME = "Ticket";
 const SYMBOL = "TK";
-const PERCENTAGE_FEE = 1;
+const PERCENTAGE_FEE = 5;
 
 const saveFrontendFiles = (contract: any, name: string) => {
     const fs = require("fs");

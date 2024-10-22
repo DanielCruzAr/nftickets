@@ -1,46 +1,24 @@
 import { useEffect, useState } from "react";
-import useMarketplaceContract from "./useMarketplaceContract";
 import { Event, Area } from "@/types/eventTypes";
-import { ethers } from "ethers";
-
-const fromWei = (value: string) => ethers.formatEther(value);
 
 const useEvent = (eventId: number) => {
-    const contract = useMarketplaceContract();
+    // const contract = useMarketplaceContract();
     const [event, setEvent] = useState<Event | null>(null);
     const [areas, setAreas] = useState<Area[]>([]);
     const [loadingAreas, setLoadingAreas] = useState(true);
 
     useEffect(() => {
-        if (!contract) return;
         let mounted = true;
 
         const getEventInfo = async () => {
             
             try {
-                const event = await contract.events(eventId);
-                const eventObj = {
-                    id: eventId,
-                    date: new Date(Number(event.date) * 1000).toLocaleString(),
-                    location: event.location,
-                    name: event.name,
-                    organizer: event.organizer,
-                };
-                const areasCount = Number(event.totalAreas);
-                const areas_: Area[] = [];
-                for (let i = 1; i <= areasCount; i++) {
-                    const area = await contract.getArea(eventId, i);
-                    const areaObj = {
-                        id: i,
-                        name: area.area,
-                        price: Number(fromWei(area.price)),
-                        quota: Number(area.quota),
-                        soldTickets: Number(area.soldTickets),
-                    };
-                    areas_.push(areaObj);
-                }
+                const eventResponse = await fetch(`http://localhost:4000/events/${eventId}`); // TODO: Use env variable
+                const areaResponse = await fetch(`http://localhost:4000/areas/?eventId=${eventId}`); // TODO: Use env variable
+                const event_: Event = await eventResponse.json();
+                const areas_: Area[] = await areaResponse.json();
                 setAreas(areas_);
-                setEvent(eventObj);
+                setEvent(event_);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -55,7 +33,7 @@ const useEvent = (eventId: number) => {
         return () => {
             mounted = false;
         };
-    }, [contract]);
+    }, []);
 
     return { event, areas, loadingAreas };
 };

@@ -8,7 +8,9 @@ const useBuyFromReseller = () => {
     const buyFromReseller = async (
         ticketId: number,
         uri: string,
-        price: string
+        price: string,
+        organizerFeePercentage: string,
+        organizer: string
     ) => {
         if (!contract) return;
 
@@ -19,10 +21,12 @@ const useBuyFromReseller = () => {
                 contract,
                 ticketId,
                 uri,
+                organizerFeePercentage,
+                organizer,
                 { value: price }
             );
             await tx.wait();
-            window.location.href = "/";
+            window.location.href = "/tickets";
         } catch (e) {
             console.error("Failed to buy ticket from reseller", e);
         } finally {

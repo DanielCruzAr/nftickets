@@ -9,6 +9,7 @@ import { ToastContainer, toast } from "react-toastify";
 import useEventTickets from "@/hooks/useEventTickets";
 import TicketCard from "@/components/TicketCard";
 import useBuyFromReseller from "@/hooks/useBuyFromReseller";
+import { Event as Ev, Area } from "@/types/eventTypes";
 
 const { Content } = Layout;
 
@@ -19,13 +20,11 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
     const { eventTickets } = useEventTickets(eventId);
     const { buyFromOrganizer, loading } = useBuyFromOrganizer();
     const { buyFromReseller, loading: loadingReseller } = useBuyFromReseller();
-    const [selectedArea, setSelectedArea] = useState<number>();
-    const [price, setPrice] = useState<number>(0);
+    const [selectedArea, setSelectedArea] = useState<Area>();
     const [form] = Form.useForm();
 
-    const handleAreaSelect = (areaId: number, areaPrice: number) => {
-        setSelectedArea(areaId);
-        setPrice(areaPrice);
+    const handleAreaSelect = (area: Area) => {
+        setSelectedArea(area);
     };
 
     const handleBuyTicket = async (values: { amount: number }) => {
@@ -34,13 +33,15 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
             return;
         }
 
-        const totalPrice = values.amount * price;
+        const totalPrice = values.amount * selectedArea.price;
+        const priceWei = toWei(selectedArea.price);
         const totalPriceWei = toWei(totalPrice);
 
         await buyFromOrganizer(
             values.amount,
-            eventId.toString(),
-            selectedArea.toString(),
+            event as Ev,
+            selectedArea,
+            priceWei.toString(),
             "https://example.com",
             totalPriceWei.toString()
         );
@@ -53,7 +54,13 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
     ) => {
         const totalPriceWei = toWei(price);
 
-        await buyFromReseller(ticketId, uri, totalPriceWei.toString());
+        await buyFromReseller(
+            ticketId, 
+            uri, 
+            totalPriceWei.toString(),
+            (event as Ev).organizerFeePercentage.toString(),
+            (event as Ev).organizer
+        );
     };
 
     return (
@@ -73,12 +80,12 @@ const Event = ({ params: { eventId } }: { params: { eventId: number } }) => {
                                 <Button
                                     style={{
                                         backgroundColor:
-                                            selectedArea === area.id
+                                            selectedArea?.id === area.id
                                                 ? "#1890ff"
                                                 : "",
                                     }}
                                     onClick={() =>
-                                        handleAreaSelect(area.id, area.price)
+                                        handleAreaSelect(area)
                                     }
                                 >
                                     Select

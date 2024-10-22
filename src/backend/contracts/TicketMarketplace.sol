@@ -4,13 +4,12 @@ pragma solidity ^0.8.5;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./EventManagement.sol";
 
 /**
  * @title TicketMarketplace
  * @dev A contract for buying and selling tickets for events
  */
-contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage {
+contract TicketMarketplace is ReentrancyGuard, ERC721URIStorage {
     struct Ticket {
         uint256 eventId;
         uint256 areaId;
@@ -24,6 +23,7 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
     mapping(uint256 => Ticket) public tickets;
     uint256 public nextTicketId = 1;
     uint256 private percentageFee;
+    address payable contractOwner;
 
     event Offered(
         uint256 ticketId,
@@ -40,7 +40,8 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
     );
 
     constructor(string memory _name, string memory _symbol, uint256 _percentageFee) 
-    EventManagement() ERC721(_name, _symbol) {
+    ERC721(_name, _symbol) {
+        contractOwner = payable(msg.sender);
         percentageFee = _percentageFee;
     }
 
@@ -82,62 +83,74 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         nextTicketId++;
     }
 
+    function validatePurchase(
+        uint256 _amount, 
+        address _organizer,
+        uint256 _quota,
+        uint256 _startTime,
+        uint256 _soldTickets,
+        bool _isCancelled,
+        bool _isCompleted 
+    ) external view returns (bool) {
+        if ((_amount <= 4) &&
+        (msg.sender != _organizer) &&
+        (_startTime > block.timestamp) &&
+        (!_isCancelled) &&
+        (!_isCompleted) &&
+        (_quota > _soldTickets)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     /**
      * @dev Buys a ticket for an event from the organizer. The buyer can't be the organizer
+     * @param _amount Number of tickets to buy
      * @param _eventId ID of the event
      * @param _areaId ID of the area
+     * @param _organizer Address of the organizer
+     * @param _price Price of the ticket
+     * @param _tokenURI URI of the ticket
      *
+     * Emits a {Bought} event
      * Requirements:
-        * - The user can't buy more than 4 tickets
-        * - The event must not be cancelled
-        * - The event must not be completed
-        * - The event must not have started
-        * - The buyer can't be the organizer
         * - The buyer must send at least the price of the ticket
-        * - The area must have available tickets
      */
     function buyTicketFromOrganizer(
+        bool _isValid,
         uint256 _amount, 
         uint256 _eventId, 
-        uint256 _areaId, 
+        uint256 _areaId,
+        address _organizer,
+        uint256 _price,
         string memory _tokenURI
     )
         external
         payable
         nonReentrant
     {
-        require(_amount <= 4, "Max 4 tickets per user");
-        Event storage _event = events[_eventId];
-        require(msg.sender != _event.organizer, "Organizer can't buy");
-        require(_event.startTime > block.timestamp, "Event has started");
-        require(!_event.isCancelled, "Event is cancelled");
-        require(!_event.isCompleted, "Event is completed");
-        uint256 _unitPrice = _event.areas[_areaId].price;
-        uint256 _totalPrice = _unitPrice * _amount;
+        require(_isValid, "Invalid purchase");
+        uint256 _totalPrice = _price * _amount;
         require(
             msg.value >= _totalPrice,
             "Insufficient payment"
-        );
-        require(
-            _event.areas[_areaId].quota > _event.areas[_areaId].soldTickets,
-            "Sold out"
         );
 
         for (uint256 i = 0; i < _amount; i++) {
             _createTicket(
                 _eventId, 
                 _areaId,
-                _unitPrice,
+                _price,
                 _tokenURI, 
-                _event.organizer
+                _organizer
             );
-            _event.areas[_areaId].soldTickets++;
         }
 
         uint256 _feeAmount = _getFeeAmount(_totalPrice);
         uint256 _returnValue = msg.value - _totalPrice;
-        _event.organizer.transfer(_totalPrice - _feeAmount);
-        payable(owner()).transfer(_feeAmount);
+        payable(_organizer).transfer(_totalPrice - _feeAmount);
+        contractOwner.transfer(_feeAmount);
         if (_returnValue > 0) {
             payable(msg.sender).transfer(_returnValue);
         }
@@ -197,7 +210,9 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
     function purchaseTicket(
         IERC721 _nft, 
         uint256 _ticketId, 
-        string memory _tokenURI
+        string memory _tokenURI,
+        uint256 _organizerFeePercentage,
+        address _organizer
     )
         external
         payable
@@ -208,17 +223,16 @@ contract TicketMarketplace is EventManagement, ReentrancyGuard, ERC721URIStorage
         require(ticket.timesSold > 0);
         require(msg.value >= ticket.price);
         require(!ticket.used, "Ticket is used");
-        Event storage _event = events[ticket.eventId];
         uint256 _feeAmountOwner = _getFeeAmount(ticket.price);
         uint256 _feeAmountOrganizer = _getOrganizerFeeAmount(
             ticket.price,
-            _event.organizerFeePercentage
+            _organizerFeePercentage
         );
         uint _returnValue = msg.value - ticket.price;
         address payable _seller = ticket.owner;
         _seller.transfer(ticket.price - _feeAmountOwner - _feeAmountOrganizer);
-        _event.organizer.transfer(_feeAmountOrganizer);
-        payable(owner()).transfer(_feeAmountOwner);
+        payable(_organizer).transfer(_feeAmountOrganizer);
+        contractOwner.transfer(_feeAmountOwner);
         if (_returnValue > 0) {
             payable(msg.sender).transfer(_returnValue);
         }

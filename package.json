@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "db": "json-server --watch ./data/data.json --port 4000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,8 +17,10 @@
     "@openzeppelin/contracts": "4.5.0",
     "antd": "^5.15.4",
     "axios": "^1.6.8",
+    "dotenv": "^16.4.5",
     "ethers": "^6.11.1",
     "framer-motion": "^11.0.18",
+    "json-server": "^1.0.0-beta.3",
     "next": "^14.2.15",
     "react": "^18",
     "react-dom": "^18",
@@ -26,6 +29,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition-ethers": "^0.15.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/dotenv": "^8.2.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

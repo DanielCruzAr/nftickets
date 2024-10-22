@@ -1,11 +1,13 @@
 export interface Event {
     id: number;
-    date: string;
     name: string;
-    organizer: string;
     location: string;
-    // isCancelled: boolean;
-    // isCompleted: boolean;
+    isCancelled: boolean;
+    isCompleted: boolean;
+    startTime: string;
+    organizer: string;
+    organizerFeePercentage: number;
+    totalAreas: number;
 }
 
 export interface Area {

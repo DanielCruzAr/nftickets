@@ -6,16 +6,65 @@ import { getUnixTimestamp } from "../utils/datetimeUtils";
 const toWei = (value: number) => hre.ethers.parseEther(value.toString());
 const fromWei = (value: any) => hre.ethers.formatEther(value);
 
+const buyTicket = async (
+    ticketMarketplace: any,
+    buyer: any,
+    event: any,
+    area: any,
+    uri: any,
+    price: any
+) => {
+    const isValid = await ticketMarketplace
+        .connect(buyer)
+        .validatePurchase(
+            1,
+            event.organizer,
+            area.quota,
+            event.startTime,
+            area.soldTickets,
+            event.isCancelled,
+            event.isCompleted
+        );
+    await ticketMarketplace
+        .connect(buyer)
+        .buyTicketFromOrganizer(
+            isValid,
+            1,
+            event.id,
+            area.id,
+            event.organizer,
+            area.price,
+            uri,
+            {
+                value: price,
+            }
+        );
+};
+
+const purchaseTicket = async (
+    ticketMarketplace: any,
+    buyer: any,
+    contractAddress: any,
+    ticketId: any,
+    uri: any,
+    fee: any,
+    organizer: any,
+    price: any
+) => {
+    await ticketMarketplace
+        .connect(buyer)
+        .purchaseTicket(contractAddress, ticketId, uri, fee, organizer, {
+            value: price,
+        });
+};
+
 describe("TicketMarketplace", function () {
     const name = "Ticket";
     const symbol = "TK";
     const percentageFee = 1;
     const organizerFee = 5;
     const price1 = 2;
-    const price2 = 2;
     const uri = "https://example.com/token/";
-    const eventDate = getUnixTimestamp(24);
-    let nextEventId = 1;
     let owner: any;
     let addr1: any;
     let addr2: any;
@@ -23,76 +72,47 @@ describe("TicketMarketplace", function () {
 
     async function setup() {
         [owner, addr1, addr2, ...addrs] = await hre.ethers.getSigners();
+        const event1 = {
+            id: 1,
+            name: "Tomorrowland",
+            location: "Boom, Belgium",
+            isCancelled: false,
+            isCompleted: false,
+            startTime: getUnixTimestamp(24),
+            organizer: addr1.address,
+            organizerFeePercentage: 5,
+            totalAreas: 7,
+        };
+        const e1area1 = {
+            id: 1,
+            eventId: 1,
+            name: "Floor A-P",
+            price: toWei(price1),
+            quota: 221,
+            soldTickets: 0,
+        };
 
         const ticketMarketplace = await hre.ethers.deployContract(
             "TicketMarketplace",
             [name, symbol, percentageFee]
         );
 
-        await ticketMarketplace.createEvent(
-            "Event 1",
-            eventDate,
-            "City",
-            addr1.address,
-            organizerFee,
-            ["Area 1", "Area 2"],
-            [toWei(price1), toWei(price2)],
-            [5, 1]
-        );
-        nextEventId++;
-
         return {
-            ticketMarketplace,
+            ticketMarketplace, event1, e1area1,
         };
     }
 
     describe("Deployment", function () {
-        it("Should set the right owner", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
-            expect(await ticketMarketplace.owner()).to.equal(owner.address);
-        });
-
         it("Should set the right name, symbol and percentage fee", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
+            const { ticketMarketplace, event1, e1area1 } = await loadFixture(setup);
             expect(await ticketMarketplace.name()).to.equal(name);
             expect(await ticketMarketplace.symbol()).to.equal(symbol);
-            // expect(await ticketMarketplace.percentageFee()).to.equal(
-            //     percentageFee
-            // );
-        });
-    });
-
-    describe("Create event", function () {
-        it("Should create an event", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
-            const eventName = "New Event";
-            const organizer = addr1.address;
-            const organizerFee = 5;
-            const areas = ["Area 1", "Area 2", "Area 3"];
-            const prices = [toWei(1), toWei(2), toWei(5)];
-            const quotas = [20, 10, 5];
-
-            await ticketMarketplace.createEvent(
-                eventName,
-                eventDate,
-                "City",
-                organizer,
-                organizerFee,
-                areas,
-                prices,
-                quotas
-            );
-            const event = await ticketMarketplace.events(nextEventId);
-            expect(event.name).to.equal(eventName);
-            expect(event.organizer).to.equal(organizer);
-            expect(event.organizerFeePercentage).to.equal(organizerFee);
-            nextEventId++;
         });
     });
 
     describe("Buy ticket from organizer", function () {
         it("Should buy a ticket from organizer", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
+            const { ticketMarketplace, event1, e1area1 } = await loadFixture(setup);
             const totalPriceWei = toWei(price1);
             const organizerInitialBalance =
                 await hre.ethers.provider.getBalance(addr1.address);
@@ -102,11 +122,14 @@ describe("TicketMarketplace", function () {
             const amountOwner = price1 * (percentageFee / 100);
             const amountOrganizer = price1 - amountOwner;
 
-            await ticketMarketplace
-                .connect(addr2)
-                .buyTicketFromOrganizer(1, 1, 1, uri, {
-                    value: totalPriceWei,
-                });
+            await buyTicket(
+                ticketMarketplace,
+                addr2,
+                event1,
+                e1area1,
+                uri,
+                totalPriceWei
+            );
 
             const buyedTicket = await ticketMarketplace.tickets(1);
             expect(buyedTicket.owner).to.equal(addr2.address, "Owner is wrong");
@@ -118,9 +141,6 @@ describe("TicketMarketplace", function () {
             expect(buyedTicket.timesSold).to.equal(1, "Times sold is wrong");
             expect(buyedTicket.used).to.equal(false, "Used is wrong");
             expect(buyedTicket.offered).to.equal(false, "Offered is wrong");
-
-            const area = await ticketMarketplace.getArea(1, 1);
-            expect(area.soldTickets).to.equal(1, "Sold tickets is wrong");
 
             const ownerFinalBalance = await hre.ethers.provider.getBalance(
                 owner.address
@@ -148,15 +168,18 @@ describe("TicketMarketplace", function () {
 
     describe("Offer ticket", function () {
         it("Should offer a ticket", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
+            const { ticketMarketplace, event1, e1area1 } = await loadFixture(setup);
             const contractAddress = await ticketMarketplace.getAddress();
             const priceOffer = toWei(1.5);
 
-            await ticketMarketplace
-                .connect(addr2)
-                .buyTicketFromOrganizer(1, 1, 1, uri, {
-                    value: toWei(price1),
-                });
+            await buyTicket(
+                ticketMarketplace,
+                addr2,
+                event1,
+                e1area1,
+                uri,
+                toWei(price1)
+            );
 
             await ticketMarketplace.connect(addr2).offerTicket(1, priceOffer);
 
@@ -168,15 +191,18 @@ describe("TicketMarketplace", function () {
             );
         });
         it("Should not offer a ticket if it has already been offered", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
+            const { ticketMarketplace, event1, e1area1 } = await loadFixture(setup);
             const contractAddress = await ticketMarketplace.getAddress();
             const priceOffer = toWei(1.5);
 
-            await ticketMarketplace
-                .connect(addr2)
-                .buyTicketFromOrganizer(1, 1, 1, uri, {
-                    value: toWei(price1),
-                });
+            await buyTicket(
+                ticketMarketplace,
+                addr2,
+                event1,
+                e1area1,
+                uri,
+                toWei(price1)
+            );
 
             await ticketMarketplace.connect(addr2).offerTicket(1, priceOffer);
 
@@ -184,13 +210,20 @@ describe("TicketMarketplace", function () {
                 ticketMarketplace.connect(addr2).offerTicket(1, priceOffer)
             ).to.be.revertedWith("Ticket already offered");
 
+            await purchaseTicket(
+                ticketMarketplace,
+                addrs[1],
+                contractAddress,
+                1,
+                uri,
+                event1.organizerFeePercentage,
+                event1.organizer,
+                priceOffer
+            );
+
             await ticketMarketplace
                 .connect(addrs[1])
-                .purchaseTicket(contractAddress, 1, uri, {
-                    value: priceOffer,
-                });
-
-            await ticketMarketplace.connect(addrs[1]).offerTicket(1, priceOffer);
+                .offerTicket(1, priceOffer);
 
             const emittedEvent = await ticketMarketplace.queryFilter(
                 ticketMarketplace.filters.Offered()
@@ -201,18 +234,21 @@ describe("TicketMarketplace", function () {
 
     describe("Buy ticket from reseller", function () {
         it("Should buy a ticket from reseller", async function () {
-            const { ticketMarketplace } = await loadFixture(setup);
+            const { ticketMarketplace, event1, e1area1 } = await loadFixture(setup);
             const contractAddress = await ticketMarketplace.getAddress();
 
             // Buy ticket from organizer
             const totalPriceWei = toWei(price1);
             const priceOffer = 2.5;
             const priceOfferWei = toWei(1.5);
-            await ticketMarketplace
-                .connect(addrs[0])
-                .buyTicketFromOrganizer(1, 1, 1, uri, {
-                    value: totalPriceWei,
-                });
+            await buyTicket(
+                ticketMarketplace,
+                addrs[0],
+                event1,
+                e1area1,
+                uri,
+                totalPriceWei
+            );
 
             const ownerInitialBalanceWei = await hre.ethers.provider.getBalance(
                 owner.address
@@ -229,11 +265,16 @@ describe("TicketMarketplace", function () {
             await ticketMarketplace
                 .connect(addrs[0])
                 .offerTicket(1, priceOfferWei);
-            await ticketMarketplace
-                .connect(addrs[1])
-                .purchaseTicket(contractAddress, 1, uri, {
-                    value: priceOfferWei,
-                });
+            await purchaseTicket(
+                ticketMarketplace,
+                addrs[1],
+                contractAddress,
+                1,
+                uri,
+                event1.organizerFeePercentage,
+                event1.organizer,
+                priceOfferWei
+            );
 
             // Test ticket data
             const buyedTicket = await ticketMarketplace.tickets(1);
