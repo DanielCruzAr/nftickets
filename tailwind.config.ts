@@ -14,7 +14,8 @@ const config: Config = {
   			'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
 			'gradient-headings': 'linear-gradient(90deg, hsl(var(--gh-stop-1)) 0%, hsl(var(--gh-stop-2)) 50%, hsl(var(--gh-stop-3)) 100%)',
 			'gradient-primary': 'linear-gradient(90deg, hsl(var(--gp-stop-1)) 0%, hsl(var(--gp-stop-2)) 100%)',
-			'gradient-secondary': 'linear-gradient(90deg, hsl(var(--gs-stop-1)) 7%, hsl(var(--gs-stop-2)) 49%, hsl(var(--gs-stop-3)) 91%)',
+			'gradient-secondary': 'linear-gradient(-74deg, hsl(var(--gs-stop-1)) 7%, hsl(var(--gs-stop-2)) 49%, hsl(var(--gs-stop-3)) 91%)',
+			'gradient-stroke': 'linear-gradient(90deg, hsl(var(--gstr-stop-1)) 0%, hsl(var(--gstr-stop-2)) 50%, hsl(var(--gstr-stop-1)) 100%)',
   		},
   		colors: {
   			primary: {

@@ -39,9 +39,11 @@ body {
 		--gh-stop-3: 0 0% 45% / 0.9;
 		--gp-stop-2: 262 100% 51% / 0.5;
         --gp-stop-1: 265 89% 45%;
-		--gs-stop-1: 0 0% 25%;
-		--gs-stop-2: 0 0% 45%;
-		--gs-stop-3: 0 0% 25%;
+		--gs-stop-1: 0 0% 25% /0.72;
+		--gs-stop-2: 0 0% 45% /0.72;
+		--gs-stop-3: 0 0% 25% /0.72;
+        --gstr-stop-1: 0 0% 25% /0.1;
+        --gstr-stop-2: 0 0% 65%;
     }
 }
 
@@ -54,10 +56,10 @@ body {
     }
 }
 
-main,
-nav {
+/* main, */
+/* nav {
     @apply max-w-6xl mx-auto my-12;
-}
+} */
 
 h1 {
 	@apply text-6xl font-semibold;
@@ -73,4 +75,8 @@ h3 {
 
 p {
 	@apply text-xl;
+}
+
+.glass {
+    @apply backdrop-blur-lg backdrop-brightness-75 border border-white/20 shadow-lg;
 }
